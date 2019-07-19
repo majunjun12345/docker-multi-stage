@@ -1,0 +1,14 @@
+# 安装编译的依赖以及编译出可执行二进制文件
+FROM golang:alpine3.10 as builder
+RUN apk --no-cache add git
+WORKDIR /go/src/github.com/go/helloworld/
+RUN go get -d -v github.com/go-sql-driver/mysql
+COPY main.go .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+# 将二进制文件拷贝至新的运行环境，没有了上述的编译时依赖
+FROM alpine:latest as prod
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=0 /go/src/github.com/go/helloworld/app .
+CMD ["./app"]
